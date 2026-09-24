@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  quizzes   Quiz[]
+}
+
+model Quiz {
+  id          String        @id @default(uuid())
+  title       String
+  description String?
+  ownerId     String
+  owner       User          @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  questions   Question[]
+  sessions    QuizSession[]
+}
+
+model Question {
+  id               String           @id @default(uuid())
+  quizId           String
+  quiz             Quiz             @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  text             String
+  order            Int
+  timeLimitSeconds Int              @default(30)
+  maxPoints        Int              @default(1000)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  options          QuestionOption[]
+  answers          Answer[]
+
+  @@unique([quizId, order])
+}
+
+model QuestionOption {
+  id         String    @id @default(uuid())
+  questionId String
+  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  order      Int
+  isCorrect  Boolean
+  createdAt  DateTime  @default(now())
+  answers    Answer[]
+
+  @@unique([questionId, order])
+}
+
+enum SessionStatus {
+  CREATED
+  LOBBY
+  QUESTION_ACTIVE
+  QUESTION_CLOSED
+  LEADERBOARD
+  FINISHED
+}
+
+model QuizSession {
+  id           String        @id @default(uuid())
+  quizId       String
+  quiz         Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  joinCode     String        @unique
+  status       SessionStatus @default(CREATED)
+  startedAt    DateTime?
+  endedAt      DateTime?
+  createdAt    DateTime      @default(now())
+  participants Participant[]
+}
+
+model Participant {
+  id               String      @id @default(uuid())
+  sessionId        String
+  session          QuizSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  displayName      String
+  sessionTokenHash String      @unique
+  totalScore       Int         @default(0)
+  joinedAt         DateTime    @default(now())
+  lastSeenAt       DateTime    @default(now())
+  answers          Answer[]
+}
+
+model Answer {
+  id               String          @id @default(uuid())
+  participantId    String
+  participant      Participant     @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  questionId       String
+  question         Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOptionId String?
+  selectedOption   QuestionOption? @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
+  isCorrect        Boolean
+  pointsAwarded    Int             @default(0)
+  answeredAt       DateTime        @default(now())
+
+  @@unique([participantId, questionId])
+}
