@@ -37,30 +37,31 @@
   - [x] Sanitized user-friendly error handling with `getErrorMessage(err)` (401, 403, 404, 409, 500, network errors).
   - [x] End-to-end full persistence lifecycle verification against PostgreSQL database.
 
-### Phase 4: Core Real-time Engine (Socket.IO)
-- Implement server-side in-memory session manager.
-- Handle session creation (6-digit code generation).
-- Handle player joining and Lobby state.
-- Implement Host controls (start quiz, next question).
-- Synchronize basic state between Host and Players.
+### Phase 4: Core Real-time Engine (Socket.IO) (Complete)
+- [x] Implement server-side in-memory session manager with clean lookup maps (`sessionsByCode`, `sessionsById`, `playerSocketToSession`, `hostSocketToSession`).
+- [x] Handle session creation with collision-free 6-digit numeric PIN generation.
+- [x] Handle player joining with validation, duplicate nickname reconnection handling, and live Lobby state broadcast.
+- [x] Implement Host controls (start quiz, next question, end question early, show leaderboard, end quiz).
+- [x] Synchronize real-time state between Host and Players via Socket.IO rooms.
 
-### Phase 5: Gameplay & Scoring (Authoritative Server)
-- Implement Question broadcasting to clients.
-- Implement authoritative timer on the server.
-- Handle answer submissions, validate against time and correct option.
-- Calculate points based on correctness.
-- Prevent duplicate answers and late submissions.
+### Phase 5: Gameplay & Scoring (Authoritative Server) (Complete)
+- [x] Implement Question broadcasting to clients with sanitized payloads (strictly omitting `isCorrect` before timer expires).
+- [x] Implement authoritative countdown timer on the server with automated timeout closure.
+- [x] Handle answer submissions, validate against time, active question, and prevent duplicate submissions.
+- [x] Pure scoring function: `score = maxPoints * (0.5 + 0.5 * remainingTime / totalTime)` clamped between 50% and 100% of max points for correct answers, 0 for incorrect.
+- [x] 100% test coverage for scoring algorithm with Vitest.
 
-### Phase 6: Results & Leaderboard
-- Implement post-question stats view for Host.
-- Implement Leaderboard state and view.
-- Finalize quiz and save historical results to PostgreSQL.
-- Implement Player view for correct/incorrect feedback, points, and rank.
+### Phase 6: Results & Leaderboard (Complete)
+- [x] Implement post-question stats view for Host with live answer count and distribution across options.
+- [x] Implement Leaderboard calculation (ranked by total score, ties handled).
+- [x] Finalize quiz and asynchronously persist session, participants, and answers to PostgreSQL via Prisma.
+- [x] Implement Player view with instant feedback: correct/incorrect, points awarded, current rank, and correct answer reveal.
 
-### Phase 7: Polish & E2E Testing
-- End-to-end testing of live game flow with Playwright.
-- Robust error handling (handling disconnects, reconnects).
-- UI/UX polish (Tailwind).
+### Phase 7: Live Experience & Frontend Polish (Complete)
+- [x] Host Live View (`/host/:quizId`): Lobby with giant PIN, player avatar pills, live countdown question screen, distribution charts, leaderboard, and podium with confetti.
+- [x] Participant Live View (`/play`): Clean mobile-first PIN join screen, lobby waiting state, colorful touch-friendly option buttons, locked-in submission state, personal result screen, leaderboard, and game over screen.
+- [x] Navigation & Access: Added "Join Game" button in Navbar and "Host Live 🚀" action on Dashboard cards and Quiz Editor readiness bar.
+- [x] Zero-error verification: Full test suite passing (25/25 tests), 0 lint errors/warnings, production builds verified.
 
 ## Risks and Likely Technical Problems
 1. **State Synchronization:** Handling race conditions if a player submits an answer exactly as the timer expires. *Mitigation: Server timestamps and strict authoritative rejection of late answers.*

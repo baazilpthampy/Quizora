@@ -4,6 +4,8 @@ import { Navbar } from "./components/Navbar";
 import { DashboardPage } from "./pages/DashboardPage";
 import { CreateQuizPage } from "./pages/CreateQuizPage";
 import { EditQuizPage } from "./pages/EditQuizPage";
+import { HostGamePage } from "./pages/HostGamePage";
+import { PlayGamePage } from "./pages/PlayGamePage";
 import "./index.css";
 
 export const App: React.FC = () => {
@@ -17,6 +19,9 @@ export const App: React.FC = () => {
             <Route path="/quizzes" element={<DashboardPage />} />
             <Route path="/quizzes/new" element={<CreateQuizPage />} />
             <Route path="/quizzes/:id/edit" element={<EditQuizPage />} />
+            <Route path="/host/:quizId" element={<HostGamePage />} />
+            <Route path="/play" element={<PlayGamePage />} />
+            <Route path="/join" element={<Navigate to="/play" replace />} />
             <Route path="*" element={<Navigate to="/quizzes" replace />} />
           </Routes>
         </main>

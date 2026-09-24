@@ -473,8 +473,21 @@ export const EditQuizPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="text-xs font-semibold whitespace-nowrap self-end sm:self-center">
-          {readyQuestions}/{totalQuestions} Ready
+        <div className="flex items-center gap-3 self-end sm:self-center">
+          <div className="text-xs font-semibold whitespace-nowrap">
+            {readyQuestions}/{totalQuestions} Ready
+          </div>
+          {isQuizReady && (
+            <Link to={`/host/${quiz.id}`}>
+              <Button
+                size="sm"
+                variant="primary"
+                className="font-bold whitespace-nowrap"
+              >
+                Host Live 🚀
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 

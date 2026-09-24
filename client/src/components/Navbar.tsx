@@ -49,6 +49,13 @@ export const Navbar: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            to="/play"
+            className="text-xs font-bold bg-amber-400 hover:bg-amber-500 text-amber-950 px-3 py-1.5 rounded-lg shadow-2xs transition-colors flex items-center gap-1.5"
+          >
+            <span>🎮</span> Join Game
+          </Link>
+
           {devUserId ? (
             <div
               className="text-xs bg-indigo-50 border border-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5"

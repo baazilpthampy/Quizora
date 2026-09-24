@@ -33,11 +33,18 @@ export const QuizCard: React.FC<QuizCardProps> = ({ quiz, onDelete }) => {
       </div>
 
       <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-        <Link to={`/quizzes/${quiz.id}/edit`}>
-          <Button variant="outline" size="sm">
-            Edit Questions
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to={`/host/${quiz.id}`}>
+            <Button variant="primary" size="sm" className="font-bold">
+              Host Live 🚀
+            </Button>
+          </Link>
+          <Link to={`/quizzes/${quiz.id}/edit`}>
+            <Button variant="outline" size="sm">
+              Edit
+            </Button>
+          </Link>
+        </div>
         <Button
           variant="ghost"
           size="sm"

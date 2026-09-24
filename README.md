@@ -65,6 +65,27 @@ cd server
 npm test
 ```
 
+## Live Multiplayer Game Engine (Phases 4–7)
+
+Quizora features an authoritative, low-latency live multiplayer engine powered by **Socket.IO**.
+
+### Hosting a Live Quiz (Teacher)
+1. Navigate to the **Teacher Dashboard** (`http://localhost:5173/quizzes`).
+2. On any quiz that has at least 1 question with 2+ options and a marked correct answer, click **"Host Live 🚀"**.
+3. A unique 6-digit PIN is generated (e.g., `384 912`) and displayed on the classroom screen.
+4. As students connect, their names appear dynamically in the lobby.
+5. Click **"Start Quiz"** to begin broadcasting questions with an authoritative countdown timer.
+6. The host controls question pacing, reviews answer distribution charts, reveals correct answers, and presents the live leaderboard and final celebratory podium.
+
+### Joining a Live Quiz (Participant)
+1. On any device (mobile, tablet, or desktop), open `http://localhost:5173/play` or click **"🎮 Join Game"** in the navigation bar.
+2. Enter the 6-digit Game PIN and choose a nickname.
+3. Wait in the lobby until the host starts the quiz.
+4. Fast, colorful multiple-choice buttons (A, B, C, D, E, F) allow one-tap answer submission.
+5. Score calculations and speed bonuses are computed strictly server-side:
+   $$\text{score} = \text{maxPoints} \times \left(0.5 + 0.5 \times \frac{\text{remainingTime}}{\text{totalTime}}\right)$$
+6. Instant personal feedback shows points awarded, rank, and correct answer upon timer expiry.
+
 ## Phase 2B: Quiz Management REST API
 
 ### Authentication (Development)
