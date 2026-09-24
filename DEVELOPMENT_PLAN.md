@@ -19,10 +19,15 @@
 - [ ] Implement production Teacher Authentication (JWT). (Phase 2 continuation / upcoming)
 
 ### Phase 3: Frontend Quiz Builder
-- Implement Teacher dashboard UI.
-- Implement Quiz creation and editing interfaces.
-- Implement Question builder with multiple choice options.
-- Integrate frontend with the backend REST API.
+- [x] Phase 3A: Frontend Quiz Builder Foundation (React + Vite + Tailwind).
+  - [x] Typed REST API client layer (`client/src/lib/api.ts`).
+  - [x] Development user authorization configuration via `VITE_DEV_USER_ID`.
+  - [x] Teacher dashboard listing quizzes with empty, loading, and error states.
+  - [x] Create quiz form with client-side validation.
+  - [x] Quiz editor with inline details editing.
+  - [x] Question builder supporting question text, order, time limit, and max points.
+  - [x] Option editor supporting 2-6 multiple choice options and single correct answer selection.
+  - [x] Complete CRUD integration with Express REST API.
 
 ### Phase 4: Core Real-time Engine (Socket.IO)
 - Implement server-side in-memory session manager.

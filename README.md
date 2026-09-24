@@ -37,13 +37,24 @@ Quizora allows teachers and presenters to create interactive quizzes and host th
    npm run db:studio
    ```
 
+### Frontend Configuration (Phase 3A)
+1. Copy the example environment file in `/client`:
+   ```bash
+   cp client/.env.example client/.env
+   ```
+2. Configure `client/.env` with your development user ID:
+   ```bash
+   VITE_API_URL=http://localhost:3001/api
+   VITE_DEV_USER_ID=<seeded-teacher-user-uuid>
+   ```
+
 ### Running the App
 ```bash
-# Start the server
+# Start the backend server (runs on http://localhost:3001)
 cd server
 npm run dev
 
-# Start the client
+# Start the frontend client (runs on http://localhost:5173)
 cd client
 npm run dev
 ```
