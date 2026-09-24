@@ -33,6 +33,47 @@ export class ApiClientError extends Error {
     this.details = details;
     Object.setPrototypeOf(this, new.target.prototype);
   }
+
+  toUserFriendlyMessage(): string {
+    if (this.code === "NETWORK_ERROR" || this.status === 0) {
+      return "Unable to connect to the Quizora server. Please ensure the backend is running and reachable.";
+    }
+    if (this.status === 401) {
+      return "Unauthorized: Development user identity is missing or invalid. Please check VITE_DEV_USER_ID in client/.env.";
+    }
+    if (this.status === 403) {
+      return "You do not have permission to view or modify this quiz resource.";
+    }
+    if (this.status === 404) {
+      return "The requested quiz, question, or option was not found. It may have already been deleted.";
+    }
+    if (this.status === 409) {
+      return (
+        this.message ||
+        "A conflict occurred. A question or option with this order may already exist."
+      );
+    }
+    if (this.status === 400) {
+      return (
+        this.message ||
+        "Invalid input data. Please check your form and try again."
+      );
+    }
+    if (this.status >= 500) {
+      return "An unexpected server error occurred. Please try again later.";
+    }
+    return this.message || "An unexpected error occurred.";
+  }
+}
+
+export function getErrorMessage(err: unknown): string {
+  if (err instanceof ApiClientError) {
+    return err.toUserFriendlyMessage();
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return "An unexpected error occurred.";
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {

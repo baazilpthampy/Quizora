@@ -28,6 +28,14 @@
   - [x] Question builder supporting question text, order, time limit, and max points.
   - [x] Option editor supporting 2-6 multiple choice options and single correct answer selection.
   - [x] Complete CRUD integration with Express REST API.
+- [x] Phase 3B: Quiz Builder Hardening & UX Refinement.
+  - [x] Deterministic question and option ordering (`order: 'asc'`).
+  - [x] Quiz and question live readiness badges with visual indicator bars.
+  - [x] Single correct answer radio mechanics with race-condition prevention (`Promise.all` toggle).
+  - [x] Hardened Modal component with Escape key and backdrop dismissal, ARIA accessibility attributes.
+  - [x] Strict character limits and field validation aligned with backend Zod schemas (titles <= 100, descriptions <= 500, questions <= 500, options <= 200, timers 5-300s, points 100-10,000).
+  - [x] Sanitized user-friendly error handling with `getErrorMessage(err)` (401, 403, 404, 409, 500, network errors).
+  - [x] End-to-end full persistence lifecycle verification against PostgreSQL database.
 
 ### Phase 4: Core Real-time Engine (Socket.IO)
 - Implement server-side in-memory session manager.

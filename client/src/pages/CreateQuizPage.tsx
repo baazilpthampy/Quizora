@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { api, ApiClientError } from "../lib/api";
+import { api, getErrorMessage } from "../lib/api";
 import { Input } from "../components/ui/Input";
 import { Textarea } from "../components/ui/Textarea";
 import { Button } from "../components/ui/Button";
@@ -21,18 +21,18 @@ export const CreateQuizPage: React.FC = () => {
     setTitleError(null);
     setError(null);
 
-    // Client-side validation
+    // Client-side validation matching backend Zod schema
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
       setTitleError("Quiz title is required.");
       return;
     }
-    if (trimmedTitle.length > 150) {
-      setTitleError("Quiz title cannot exceed 150 characters.");
+    if (trimmedTitle.length > 100) {
+      setTitleError("Quiz title cannot exceed 100 characters.");
       return;
     }
-    if (description.length > 1000) {
-      setError("Description cannot exceed 1000 characters.");
+    if (description.length > 500) {
+      setError("Description cannot exceed 500 characters.");
       return;
     }
 
@@ -46,13 +46,7 @@ export const CreateQuizPage: React.FC = () => {
       // Navigate to editor to add questions
       navigate(`/quizzes/${newQuiz.id}/edit`);
     } catch (err: unknown) {
-      if (err instanceof ApiClientError) {
-        setError(err.message);
-      } else {
-        setError(
-          "Failed to create quiz. Please check your network connection.",
-        );
-      }
+      setError(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -92,13 +86,14 @@ export const CreateQuizPage: React.FC = () => {
           <Input
             label="Quiz Title *"
             value={title}
+            maxLength={100}
             onChange={(e) => {
               setTitle(e.target.value);
               if (titleError) setTitleError(null);
             }}
             placeholder="e.g. World Geography & History"
             error={titleError || undefined}
-            helperText="Maximum 150 characters"
+            helperText={`${title.length}/100 characters`}
             autoFocus
             required
           />
@@ -106,10 +101,11 @@ export const CreateQuizPage: React.FC = () => {
           <Textarea
             label="Description (Optional)"
             value={description}
+            maxLength={500}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Brief overview or instructions for your students..."
             rows={4}
-            helperText="Maximum 1000 characters"
+            helperText={`${description.length}/500 characters`}
           />
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">

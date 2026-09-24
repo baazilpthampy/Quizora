@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { api, ApiClientError } from "../lib/api";
+import { api, getErrorMessage } from "../lib/api";
 import type { QuizSummary } from "../types/api";
 import { QuizCard } from "../components/quiz/QuizCard";
 import { Button } from "../components/ui/Button";
@@ -28,17 +28,7 @@ export const DashboardPage: React.FC = () => {
       })
       .catch((err: unknown) => {
         if (!ignore) {
-          if (err instanceof ApiClientError && err.status === 401) {
-            setError(
-              "Unauthorized: Please configure a valid VITE_DEV_USER_ID environment variable in client/.env.",
-            );
-          } else if (err instanceof Error) {
-            setError(err.message);
-          } else {
-            setError(
-              "Failed to load quizzes. Please check your network connection.",
-            );
-          }
+          setError(getErrorMessage(err));
           setIsLoading(false);
         }
       });
@@ -57,7 +47,7 @@ export const DashboardPage: React.FC = () => {
       setQuizzes((prev) => prev.filter((q) => q.id !== quizToDelete.id));
       setQuizToDelete(null);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to delete quiz");
+      setError(getErrorMessage(err));
     } finally {
       setIsDeleting(false);
     }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { api, ApiClientError } from "../lib/api";
+import { api, getErrorMessage } from "../lib/api";
 import type { QuizDetail, CreateOptionDto } from "../types/api";
 import { QuestionCard } from "../components/question/QuestionCard";
 import { Button } from "../components/ui/Button";
@@ -53,11 +53,7 @@ export const EditQuizPage: React.FC = () => {
       })
       .catch((err: unknown) => {
         if (!ignore) {
-          if (err instanceof ApiClientError) {
-            setError(err.message);
-          } else {
-            setError("Failed to load quiz definition.");
-          }
+          setError(getErrorMessage(err));
           setIsLoading(false);
         }
       });
@@ -69,10 +65,19 @@ export const EditQuizPage: React.FC = () => {
 
   const handleSaveQuizDetails = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id) return;
+    if (!id || !quiz) return;
 
-    if (!quizTitle.trim()) {
+    const trimmedTitle = quizTitle.trim();
+    if (!trimmedTitle) {
       setError("Quiz title is required.");
+      return;
+    }
+    if (trimmedTitle.length > 100) {
+      setError("Quiz title cannot exceed 100 characters.");
+      return;
+    }
+    if (quizDesc.length > 500) {
+      setError("Quiz description cannot exceed 500 characters.");
       return;
     }
 
@@ -80,7 +85,7 @@ export const EditQuizPage: React.FC = () => {
       setIsSavingQuiz(true);
       setError(null);
       const updated = await api.quizzes.update(id, {
-        title: quizTitle.trim(),
+        title: trimmedTitle,
         description: quizDesc.trim() || null,
       });
 
@@ -97,10 +102,18 @@ export const EditQuizPage: React.FC = () => {
       setSuccessMessage("Quiz details updated successfully.");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to update quiz");
+      setError(getErrorMessage(err));
     } finally {
       setIsSavingQuiz(false);
     }
+  };
+
+  const handleCancelEditQuiz = () => {
+    if (quiz) {
+      setQuizTitle(quiz.title);
+      setQuizDesc(quiz.description || "");
+    }
+    setIsEditingQuiz(false);
   };
 
   const handleAddQuestion = async (e: React.FormEvent) => {
@@ -108,16 +121,21 @@ export const EditQuizPage: React.FC = () => {
     if (!id || !quiz) return;
     setQuestionFormError(null);
 
-    if (!newQuestionText.trim()) {
+    const trimmedText = newQuestionText.trim();
+    if (!trimmedText) {
       setQuestionFormError("Question text is required.");
       return;
     }
-    if (newTimeLimit <= 0) {
-      setQuestionFormError("Time limit must be positive.");
+    if (trimmedText.length > 500) {
+      setQuestionFormError("Question text cannot exceed 500 characters.");
       return;
     }
-    if (newMaxPoints <= 0) {
-      setQuestionFormError("Points must be positive.");
+    if (newTimeLimit < 5 || newTimeLimit > 300) {
+      setQuestionFormError("Time limit must be between 5 and 300 seconds.");
+      return;
+    }
+    if (newMaxPoints < 100 || newMaxPoints > 10000) {
+      setQuestionFormError("Points must be between 100 and 10,000.");
       return;
     }
 
@@ -131,7 +149,7 @@ export const EditQuizPage: React.FC = () => {
 
       // 1. Create the question
       const createdQuestion = await api.questions.create(id, {
-        text: newQuestionText.trim(),
+        text: trimmedText,
         order: nextOrder,
         timeLimitSeconds: Number(newTimeLimit),
         maxPoints: Number(newMaxPoints),
@@ -168,9 +186,7 @@ export const EditQuizPage: React.FC = () => {
       setSuccessMessage("Question added successfully.");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: unknown) {
-      setQuestionFormError(
-        err instanceof Error ? err.message : "Failed to add question",
-      );
+      setQuestionFormError(getErrorMessage(err));
     } finally {
       setIsSubmittingQuestion(false);
     }
@@ -180,22 +196,27 @@ export const EditQuizPage: React.FC = () => {
     questionId: string,
     updates: { text?: string; timeLimitSeconds?: number; maxPoints?: number },
   ) => {
-    const updated = await api.questions.update(questionId, updates);
-    setQuiz((prev) => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        questions: prev.questions.map((q) =>
-          q.id === questionId
-            ? {
-                ...q,
-                ...updated,
-                options: q.options, // maintain options array
-              }
-            : q,
-        ),
-      };
-    });
+    try {
+      const updated = await api.questions.update(questionId, updates);
+      setQuiz((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          questions: prev.questions.map((q) =>
+            q.id === questionId
+              ? {
+                  ...q,
+                  ...updated,
+                  options: q.options, // maintain options array
+                }
+              : q,
+          ),
+        };
+      });
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+      throw err;
+    }
   };
 
   const handleDeleteQuestionConfirm = async () => {
@@ -211,61 +232,76 @@ export const EditQuizPage: React.FC = () => {
         };
       });
       setQuestionToDelete(null);
+      setSuccessMessage("Question deleted successfully.");
+      setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : "Failed to delete question",
-      );
+      setError(getErrorMessage(err));
     } finally {
       setIsDeletingQuestion(false);
     }
   };
 
   const handleAddOption = async (questionId: string, dto: CreateOptionDto) => {
-    const newOpt = await api.options.create(questionId, dto);
-    setQuiz((prev) => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        questions: prev.questions.map((q) =>
-          q.id === questionId
-            ? { ...q, options: [...(q.options || []), newOpt] }
-            : q,
-        ),
-      };
-    });
+    try {
+      const newOpt = await api.options.create(questionId, dto);
+      setQuiz((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          questions: prev.questions.map((q) =>
+            q.id === questionId
+              ? { ...q, options: [...(q.options || []), newOpt] }
+              : q,
+          ),
+        };
+      });
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+      throw err;
+    }
   };
 
   const handleUpdateOption = async (
     optionId: string,
     updates: { text?: string; isCorrect?: boolean },
   ) => {
-    const updatedOpt = await api.options.update(optionId, updates);
-    setQuiz((prev) => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        questions: prev.questions.map((q) => ({
-          ...q,
-          options: (q.options || []).map((opt) =>
-            opt.id === optionId ? { ...opt, ...updatedOpt } : opt,
-          ),
-        })),
-      };
-    });
+    try {
+      const updatedOpt = await api.options.update(optionId, updates);
+      setQuiz((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          questions: prev.questions.map((q) => ({
+            ...q,
+            options: (q.options || []).map((opt) =>
+              opt.id === optionId ? { ...opt, ...updatedOpt } : opt,
+            ),
+          })),
+        };
+      });
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+      throw err;
+    }
   };
 
   const handleDeleteOption = async (optionId: string) => {
-    await api.options.delete(optionId);
-    setQuiz((prev) => {
-      if (!prev) return null;
-      return {
-        ...prev,
-        questions: prev.questions.map((q) => ({
-          ...q,
-          options: (q.options || []).filter((opt) => opt.id !== optionId),
-        })),
-      };
-    });
+    try {
+      await api.options.delete(optionId);
+      setQuiz((prev) => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          questions: prev.questions.map((q) => ({
+            ...q,
+            options: (q.options || []).filter((opt) => opt.id !== optionId),
+          })),
+        };
+      });
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+      throw err;
+    }
   };
 
   if (isLoading) {
@@ -295,7 +331,17 @@ export const EditQuizPage: React.FC = () => {
     );
   }
 
-  const questions = quiz.questions || [];
+  // Ensure deterministic question ordering
+  const questions = (quiz.questions || [])
+    .slice()
+    .sort((a, b) => a.order - b.order);
+  const totalQuestions = questions.length;
+  const readyQuestions = questions.filter(
+    (q) =>
+      (q.options || []).length >= 2 &&
+      (q.options || []).some((o) => o.isCorrect),
+  ).length;
+  const isQuizReady = totalQuestions > 0 && readyQuestions === totalQuestions;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
@@ -327,19 +373,23 @@ export const EditQuizPage: React.FC = () => {
       )}
 
       {/* Quiz Header Card */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 mb-8">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 mb-6">
         {isEditingQuiz ? (
           <form onSubmit={handleSaveQuizDetails} className="space-y-4">
             <Input
-              label="Quiz Title"
+              label="Quiz Title *"
               value={quizTitle}
+              maxLength={100}
               onChange={(e) => setQuizTitle(e.target.value)}
+              helperText={`${quizTitle.length}/100 characters`}
               required
             />
             <Textarea
               label="Description"
               value={quizDesc}
+              maxLength={500}
               onChange={(e) => setQuizDesc(e.target.value)}
+              helperText={`${quizDesc.length}/500 characters`}
               rows={2}
             />
             <div className="flex justify-end gap-2">
@@ -347,7 +397,7 @@ export const EditQuizPage: React.FC = () => {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setIsEditingQuiz(false)}
+                onClick={handleCancelEditQuiz}
                 disabled={isSavingQuiz}
               >
                 Cancel
@@ -365,6 +415,7 @@ export const EditQuizPage: React.FC = () => {
                   {quiz.title}
                 </h1>
                 <button
+                  type="button"
                   onClick={() => setIsEditingQuiz(true)}
                   className="text-xs font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded cursor-pointer"
                 >
@@ -376,7 +427,7 @@ export const EditQuizPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <div className="text-right">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
                   Questions
@@ -388,6 +439,43 @@ export const EditQuizPage: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Quiz Readiness Status Bar */}
+      <div
+        className={`rounded-xl border px-4 py-3 mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm ${
+          totalQuestions === 0
+            ? "bg-slate-50 border-slate-200 text-slate-600"
+            : isQuizReady
+              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+              : "bg-amber-50 border-amber-200 text-amber-800"
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-base">
+            {totalQuestions === 0 ? "ℹ️" : isQuizReady ? "✓" : "⚠️"}
+          </span>
+          <div>
+            <p className="font-semibold text-xs sm:text-sm">
+              {totalQuestions === 0
+                ? "Quiz is currently empty"
+                : isQuizReady
+                  ? "Quiz is ready for live hosting"
+                  : "Quiz needs attention before hosting"}
+            </p>
+            <p className="text-xs opacity-90">
+              {totalQuestions === 0
+                ? "Add at least one question with 2+ options and 1 correct answer to prepare for live hosting."
+                : isQuizReady
+                  ? `All ${totalQuestions} ${totalQuestions === 1 ? "question has" : "questions have"} valid options and a marked correct answer.`
+                  : `${readyQuestions} of ${totalQuestions} questions ready. Questions with missing options or answers are highlighted below.`}
+            </p>
+          </div>
+        </div>
+
+        <div className="text-xs font-semibold whitespace-nowrap self-end sm:self-center">
+          {readyQuestions}/{totalQuestions} Ready
+        </div>
       </div>
 
       {/* Questions Section Header */}
@@ -421,8 +509,13 @@ export const EditQuizPage: React.FC = () => {
             <Input
               label="Question Text *"
               value={newQuestionText}
-              onChange={(e) => setNewQuestionText(e.target.value)}
+              maxLength={500}
+              onChange={(e) => {
+                setNewQuestionText(e.target.value);
+                if (questionFormError) setQuestionFormError(null);
+              }}
               placeholder="e.g. In which year did the Apollo 11 moon landing occur?"
+              helperText={`${newQuestionText.length}/500 characters`}
               autoFocus
               required
             />
@@ -435,6 +528,7 @@ export const EditQuizPage: React.FC = () => {
                 max={300}
                 value={newTimeLimit}
                 onChange={(e) => setNewTimeLimit(Number(e.target.value))}
+                helperText="5 – 300 seconds"
                 required
               />
               <Input
@@ -445,6 +539,7 @@ export const EditQuizPage: React.FC = () => {
                 step={50}
                 value={newMaxPoints}
                 onChange={(e) => setNewMaxPoints(Number(e.target.value))}
+                helperText="100 – 10,000 points"
                 required
               />
             </div>
